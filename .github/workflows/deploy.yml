@@ -1,0 +1,56 @@
+
+name: Deploy website
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lay ma nguon
+        uses: actions/checkout@v7
+
+      - name: Kiem tra ba file bat buoc
+        run: |
+          test -f index.html || { echo "::error::Thieu file index.html"; exit 1; }
+          test -f style.css || { echo "::error::Thieu file style.css"; exit 1; }
+          test -f script.js || { echo "::error::Thieu file script.js"; exit 1; }
+          echo "Da tim thay du 3 file."
+
+      - name: Kiem tra the title trong index.html
+        run: |
+          grep -Eiq '<title[^>]*>' index.html || { echo "::error::Thieu the mo title"; exit 1; }
+          grep -Eiq '</title>' index.html || { echo "::error::Thieu the dong title"; exit 1; }
+          echo "Kiem tra title thanh cong."
+
+  deploy:
+    needs: check
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Lay ma nguon
+        uses: actions/checkout@v7
+
+      - name: Dong goi website
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: .
+
+      - name: Trien khai GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
